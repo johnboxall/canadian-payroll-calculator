@@ -11,27 +11,22 @@ from employee.models import Employee
 
 
 class PayrollAdmin(admin.ModelAdmin):
-    list_display = ["employee",
-                    "salary",
-                    "net_amount", 
-                    "federal_tax_deductions", 
-                    "provincial_tax_deductions", 
-                    "cpp_deductions", 
-                    "ei_deductions", 
-                    "total_tax_on_income", 
-                    "total_deductions_on_income", 
-                    "corporate_payable_tax", 
-                    "paid", 
-                    "created_at"]
-    list_filter = ["employee", "paid"]
+    list_display = L("employee salary net_amount federal_tax_deductions provincial_tax_deductions cpp_deductions ei_deductions total_tax_on_income total_deductions_on_income corporate_payable_tax paid created_at")
+    
+    list_filter = L("employee paid")
+    actions = L("mark_as_paid")
+    ordering = L("-created_at")
     date_hierarchy = "created_at"
     save_as = True
 
+
+    def mark_as_paid(self, request, qs):
+        updates = qs.update(paid=True)
+        self.message_user(request, "%s successfully marked as paid." % updates)
+    mark_as_paid.short_description = "Mark selected payrolls as paid"
+
     def add_view(self, request, form_url='', extra_context=None):
-        """
-        Copied from django.auth.admin.UserAdmin.add_view.
-        
-        """
+        """Copied from django.auth.admin.UserAdmin.add_view."""
         model = self.model
         opts = model._meta
 
