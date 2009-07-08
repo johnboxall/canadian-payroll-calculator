@@ -50,7 +50,7 @@ class Employee(models.Model):
         return "%s %s" % (self.first_name, self.last_name)
         
     def get_add_payroll_url(self):
-        return "/admin/payroll/payroll/add/?employee_id=%i" % self.id
+        return "/payroll/payroll/add/?employee_id=%i" % self.id
     
     def payroll_link(self):
         return '<a href="%s">Add</a>' % self.get_add_payroll_url()
