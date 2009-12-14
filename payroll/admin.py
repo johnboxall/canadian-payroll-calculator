@@ -1,6 +1,4 @@
-from string import split as L
 from django.contrib import admin
-from django.contrib.admin import helpers
 from django.template import RequestContext
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import render_to_response
@@ -11,27 +9,31 @@ from employee.models import Employee
 
 
 class PayrollAdmin(admin.ModelAdmin):
-    list_display = L("employee salary net_amount federal_tax_deductions provincial_tax_deductions cpp_deductions ei_deductions total_tax_on_income total_deductions_on_income corporate_payable_tax paid created_at")
+    list_display = [
+        "employee", "salary", "net_amount", "federal_tax_deductions", 
+        "provincial_tax_deductions", "cpp_deductions", "ei_deductions", 
+        "total_tax_on_income", "total_deductions_on_income", 
+        "corporate_payable_tax", "paid", "created_at"
+    ]
     
-    list_filter = L("employee paid")
-    actions = L("mark_as_paid")
-    ordering = L("-created_at")
+    list_filter = ["employee", "paid"]
+    actions = ["mark_as_paid"]
+    ordering = ["-created_at"]
     date_hierarchy = "created_at"
     save_as = True
-
-
+    
     def mark_as_paid(self, request, qs):
         updates = qs.update(paid=True)
         self.message_user(request, "%s successfully marked as paid." % updates)
     mark_as_paid.short_description = "Mark selected payrolls as paid"
-
+    
     def add_view(self, request, form_url='', extra_context=None):
         """Copied from django.auth.admin.UserAdmin.add_view."""
         model = self.model
         opts = model._meta
-
+        
         if not self.has_add_permission(request):
-            raise PermissionDenied        
+            raise PermissionDenied
         
         if request.method == "POST":
             form = PayrollForm(request.POST)
@@ -44,12 +46,14 @@ class PayrollAdmin(admin.ModelAdmin):
             initial = None
             if 'employee_id' in request.REQUEST:            
                 e = Employee.objects.get(pk=request.REQUEST['employee_id'])
-                initial = {"employee": e.id,
-                           "salary": e.salary,
-                           "ei_exempt": not e.subject_to_ei,
-                           "cpp_to_date": e.total_cpp_deductions(),
-                           "ei_to_date": e.total_ei_deductions(),
-                           "payperiod": e.payperiod}
+                initial = {
+                    "employee": e.id,
+                    "salary": e.salary,
+                    "ei_exempt": not e.subject_to_ei,
+                    "cpp_to_date": e.total_cpp_deductions(),
+                    "ei_to_date": e.total_ei_deductions(),
+                    "payperiod": e.payperiod
+                }
             form = PayrollForm(initial=initial)
 
         return render_to_response('admin/payroll/payroll/add_form.html', {

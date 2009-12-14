@@ -37,12 +37,16 @@ class Employee(models.Model):
 
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
-    salary = models.FloatField(default="0.00", help_text="Default salary per pay period.")
-    payperiod = models.SmallIntegerField(choices=PAYPERIOD_CHOICES, default=PAYPERIOD_DEFAULT, help_text="Default pay period.")
-    federal_claim_code = models.SmallIntegerField(choices=FEDERAL_CLAIMCODE_CHOICES, default=FEDERAL_CLAIMCODE_DEFAULT, help_text="Default claim code.")    
+    salary = models.FloatField(default="0.00", 
+        help_text="Default salary per pay period.")
+    payperiod = models.SmallIntegerField(choices=PAYPERIOD_CHOICES, 
+        default=PAYPERIOD_DEFAULT, help_text="Default pay period.")
+    federal_claim_code = models.SmallIntegerField(choices=FEDERAL_CLAIMCODE_CHOICES, 
+        default=FEDERAL_CLAIMCODE_DEFAULT, help_text="Default claim code.")    
     # ### Provincal claim codes change depending on what province this dude is from.
     # provinical_claim_code = ""
-    subject_to_ei = models.BooleanField(default=True, help_text="Where this employee is subject to EI.") 
+    subject_to_ei = models.BooleanField(default=True, 
+        help_text="Where this employee is subject to EI.") 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

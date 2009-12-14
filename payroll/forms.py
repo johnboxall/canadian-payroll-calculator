@@ -19,26 +19,14 @@ class PayrollForm(forms.Form):
     ei_to_date = forms.FloatField()
                 
     def save(self):
-        """
-        Save the Payroll data.
-        
-        """
         # Ask the Payroll calculator what this guy's tax is.
-        e = self.cleaned_data["employee"]
-        kw = {}
-        kw['salary'] = self.cleaned_data['salary']
-        kw['ei_exempt'] = self.cleaned_data['ei_exempt'] #not e.subject_to_ei
-        kw['cpp_to_date'] = self.cleaned_data['cpp_to_date'] #e.total_cpp_deductions()
-        kw['ei_to_date'] = self.cleaned_data['ei_to_date'] #e.total_ei_deductions()
-        kw['payperiod'] = self.cleaned_data['payperiod'] #e.payperiod
-        
-        
-        calc = calculator.PayrollCalculator(**kw)
+        employee = self.cleaned_data.pop("employee")
+        calc = calculator.PayrollCalculator(**self.cleaned_data)
         results = calc.calculate()
         
         # Create the Payroll object.
-        payroll_object = Payroll.objects.create(**{
-            "employee": e,
+        obj = Payroll.objects.create(**{
+            "employee": employee,
             "salary": results[0],
             "ei_insurable_earnings": results[1],
             "taxable_income": results[2],
@@ -53,4 +41,4 @@ class PayrollForm(forms.Form):
             "total_deductions_on_income": results[11],
             "net_amount": results[12]
         })
-        return payroll_object
+        return obj

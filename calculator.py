@@ -29,10 +29,13 @@ class PayrollCalculator(object):
         # 1) Pay Period
         print "PAY"
         print self.b.geturl()
-        self.b.select_form(name="payrollData")
-        self.b.form["year"] = ["4"]  # January 1, 2009
-        self.b.form["province"] = ["9"]  # British Columbia
-        self.b.form["payPeriod"] = [self.payperiod]#["2"]  # Biweekly
+        self.b.select_form(name="welcomeData")
+        # January 1, 2009 - "4"
+        self.b.form["year"] = ["4"]
+        # British Columbia - "`9"
+        self.b.form["province"] = ["9"]
+        # Biweekly - "2"
+        self.b.form["payPeriod"] = [self.payperiod]
         self.b.submit(name="fwdSalary")
 
         # 2) Salary / Bonus Etc.
@@ -43,7 +46,8 @@ class PayrollCalculator(object):
         self.b.form["yearToDateEIAmount"] = self.ei_to_date
         
         if self.ei_exempt:
-            self.b.form["yearToDateEI"] = ["2"]  # EI exempt
+            # EI exempt - "2"
+            self.b.form["yearToDateEI"] = ["2"]
         
         self.b.submit(name="fwdGrossSalary")
 
@@ -58,27 +62,30 @@ class PayrollCalculator(object):
         print "SALARY"
         print self.b.geturl()
         self.b.select_form(name="payrollData")
-        self.b.submit(nr=3)  # 3 is the magic number for the Calculate button
-
+        # 3 is the magic number for the Calculate button
+        self.b.submit(nr=3)
+        
         # 5) Results page. Scraping time.
         self.doc = HTML.fromstring(self.b.response().read(), self.b.geturl())
         return self._needle()    
     
     def _needle(self):
         # The data we want is trapped somewhere around here.
-        fields = ["Salary or wages for the pay period",
-                  "Total EI insurable earnings for the pay period",
-                  "Taxable income",
-                  "Cash income for the pay period",
-                  "Federal tax deductions",
-                  "Provincial tax deductions",
-                  "Requested additional tax deduction",
-                  "Total tax on income",
-                  "CPP deductions",
-                  "EI deductions",
-                  "Amounts deducted at source",
-                  "Total deductions on income",
-                  "Net amount"]
+        fields = [
+            "Salary or wages for the pay period",
+            "Total EI insurable earnings for the pay period",
+            "Taxable income",
+            "Cash income for the pay period",
+            "Federal tax deductions",
+            "Provincial tax deductions",
+            "Requested additional tax deduction",
+            "Total tax on income",
+            "CPP deductions",
+            "EI deductions",
+            "Amounts deducted at source",
+            "Total deductions on income",
+            "Net amount"
+        ]
                   
         values = [string2dollar(td.text) for td in self.doc.xpath("//table[3]//td[2]")]
         values.append(string2dollar(self.doc.xpath("//table[4]//td[2]")[0].text))
@@ -89,7 +96,7 @@ class PayrollCalculator(object):
         
         return values
         #return zip(fields, values)
-        
-        
+
+
 def string2dollar(s):
     return round(float(''.join(c for c in s if c in string.digits + '.')), 2)
