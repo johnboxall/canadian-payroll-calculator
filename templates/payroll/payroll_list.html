@@ -1,0 +1,70 @@
+{% load payroll_tags %}<html>
+<head>
+<style>
+table { cell-spacing: 0; border-collapse:collapse; text-align: left; }
+td { border: 1px solid black; padding: 5px; min-width: 125px; }
+</style>
+</head>
+<body>
+
+
+<form action="" method="get">
+    <table>
+        {{ filter.form.as_table }}
+        <tr><td colspan="2" align="right">YYYY-MM-DD</td></tr>
+        <tr><td colspan="2" align="right"><input type="submit" /></td></tr>
+    </table>
+</form>
+
+
+
+<h1>Statement of Accounts</h1>
+<table>
+    <thead>
+        <tr>
+            <th>Employee</th>
+            <th>Date</th>
+            <th>Salary</th>
+            <th>Net</th>
+            <th>Corporate CPP</th>
+            <th>Corporate EI</th>        
+            <th>Tax</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for p in filter %}
+            <tr>
+                <td>{{ p.employee }}</td>
+                <td>{{ p.created_at|date:"M d, Y" }}</td>
+                <td>{{ p.salary }}</td>
+                <td>{{ p.net_amount }}</td>
+                <td>{{ p.total_cpp_deductions }}</td>
+                <td>{{ p.total_ei_deductions }}</td>
+                <td>{{ p.total_tax_deductions }}</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+    <tfoot>
+        <tr>
+            <td colspan="7">Totals</td>
+        </tr>
+        <tr>
+            <td></td>
+            <td></td>
+            <td>{{ filter|sum:"salary" }}</td>
+            <td>{{ filter|sum:"net_amount" }}</td>
+            <td>{{ filter|sum:"total_cpp_deductions" }}</td>
+            <td>{{ filter|sum:"total_ei_deductions" }}</td>
+            <td>{{ filter|sum:"total_tax_deductions" }}</td>
+        </tr>
+        <tr>
+            <td colspan="3"></td>
+            <td colspan="2" align="right"><strong>Total Tax: {{ filter|sum:"corporate_payable_tax2"}}</strong></td>
+            <td colspan="2" align="right"><strong>Total Liability: {{ filter|sum:"total_liability"}}</strong></td>
+        </tr>
+    </tfoot>
+</table>
+
+
+</body>
+</html>

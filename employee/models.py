@@ -1,12 +1,10 @@
+import datetime
+
 from django.db import models
 from django.db.models import Sum
-
+from django.utils.functional import curry
 
 class Employee(models.Model):
-    """
-    A dude who works with you!
-    
-    """
     # This logic would be better in the calculator.
     PAYPERIOD_CHOICES = (
         (0, "Daily (240)"),
@@ -43,10 +41,10 @@ class Employee(models.Model):
         default=PAYPERIOD_DEFAULT, help_text="Default pay period.")
     federal_claim_code = models.SmallIntegerField(choices=FEDERAL_CLAIMCODE_CHOICES, 
         default=FEDERAL_CLAIMCODE_DEFAULT, help_text="Default claim code.")    
-    # ### Provincal claim codes change depending on what province this dude is from.
+    # Provincal claim codes change depending on what province this dude is from.
     # provinical_claim_code = ""
     subject_to_ei = models.BooleanField(default=True, 
-        help_text="Where this employee is subject to EI.") 
+        help_text="Whether employee is subject to EI.") 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -58,15 +56,21 @@ class Employee(models.Model):
     
     def payroll_link(self):
         return '<a href="%s">Add</a>' % self.get_add_payroll_url()
+    payroll_link.short_description = "Add Payroll"
     payroll_link.allow_tags = True 
 
-    def _payroll_field_sum(self, field):
-        """
-        Return the total of a field
+    def _payroll_field_sum(self, field, **kwargs):
+        # Returns sum of field!
+        qs = self.payroll_set
+        if len(kwargs):
+            qs = qs.filter(**kwargs)        
+        return round(qs.aggregate(total=Sum(field)).get("total") or 0.0, 3)
         
-        """
-        total = self.payroll_set.aggregate(total=Sum(field)).get("total") or 0.0
-        return round(total, 3)
+    def _sum_for_this_year(self, field):
+        year = datetime.datetime.now().year
+        start = datetime.date(year, 1, 1)
+        end = datetime.date(year + 1, 1, 1)
+        return self._payroll_field_sum(field, created_at__range=(start, end))
     
     def total_salary(self):
         return self._payroll_field_sum("salary")
@@ -79,6 +83,12 @@ class Employee(models.Model):
     def total_ei_deductions(self):
         return self._payroll_field_sum("ei_deductions")
     total_ei_deductions.short_description = "EI"
+
+    def cpp_this_year(self):
+        return self._sum_for_this_year("cpp_deductions")
+        
+    def ei_this_year(self):
+        return self._sum_for_this_year("ei_deductions")
     
     def total_provinical_deductions(self):
         return self._payroll_field_sum("provincial_tax_deductions")

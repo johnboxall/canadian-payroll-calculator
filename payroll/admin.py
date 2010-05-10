@@ -1,3 +1,5 @@
+import datetime
+
 from django.contrib import admin
 from django.template import RequestContext
 from django.core.exceptions import PermissionDenied
@@ -9,11 +11,19 @@ from employee.models import Employee
 
 
 class PayrollAdmin(admin.ModelAdmin):
+    #list_display = [
+    #    "employee", "salary", "net_amount", "federal_tax_deductions", 
+    #    "provincial_tax_deductions", "cpp_deductions", "ei_deductions", 
+    #    "total_tax_on_income", "total_deductions_on_income", 
+    #    "corporate_payable_tax", "paid", "created_at"
+    #]
+    
+    # WE STARTED USING CPT2 in MARCH. corporate_payable_tax2
+    
     list_display = [
-        "employee", "salary", "net_amount", "federal_tax_deductions", 
-        "provincial_tax_deductions", "cpp_deductions", "ei_deductions", 
-        "total_tax_on_income", "total_deductions_on_income", 
-        "corporate_payable_tax", "paid", "created_at"
+        "paid", "employee", "created_at", "paid_at", "salary", "net_amount", "corporate_payable_tax",
+        "corporate_payable_tax2",
+        "total_tax_deductions", "total_cpp_deductions", "total_ei_deductions"
     ]
     
     list_filter = ["employee", "paid"]
@@ -23,7 +33,8 @@ class PayrollAdmin(admin.ModelAdmin):
     save_as = True
     
     def mark_as_paid(self, request, qs):
-        updates = qs.update(paid=True)
+        updates = qs.update(paid=True, paid_at=datetime.datetime.now())
+        
         self.message_user(request, "%s successfully marked as paid." % updates)
     mark_as_paid.short_description = "Mark selected payrolls as paid"
     
@@ -50,8 +61,10 @@ class PayrollAdmin(admin.ModelAdmin):
                     "employee": e.id,
                     "salary": e.salary,
                     "ei_exempt": not e.subject_to_ei,
-                    "cpp_to_date": e.total_cpp_deductions(),
-                    "ei_to_date": e.total_ei_deductions(),
+                    # cpp_to_date THIS YEAR.
+                    "cpp_to_date": e.cpp_this_year(),
+                    # cpp_to_date THIS YEAR.
+                    "ei_to_date": e.ei_this_year(),
                     "payperiod": e.payperiod
                 }
             form = PayrollForm(initial=initial)
@@ -73,6 +86,7 @@ class PayrollAdmin(admin.ModelAdmin):
             'root_path': self.admin_site.root_path,
             'app_label': self.model._meta.app_label,
         }, context_instance=RequestContext(request))
-    
+
+
 
 admin.site.register(Payroll, PayrollAdmin)
