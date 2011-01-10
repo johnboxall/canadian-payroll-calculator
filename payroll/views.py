@@ -26,7 +26,7 @@ class PayrollFilterSet(django_filters.FilterSet):
     
     class Meta:
         model = Payroll
-        fields = ['created_at']
+        fields = ['created_at', 'employee']
 
 
 def payroll_list(request):

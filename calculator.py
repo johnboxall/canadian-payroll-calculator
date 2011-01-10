@@ -1,3 +1,4 @@
+import datetime
 import pprint
 import string
 
@@ -5,105 +6,97 @@ from lxml import html as HTML
 from mechanize import Browser
 
 
-ENDPOINT = "https://apps.cra-arc.gc.ca/ebci/rhpd/startLanguage.do?lang=English"
-
-
-class PayrollCalculator(object):
-    """
-    Calculate's payroll taxes from the CRA online payroll calculator.
-    
-    """
-    def __init__(self, salary, cpp_to_date, ei_to_date, ei_exempt, payperiod):
-        self.payperiod = str(payperiod)
-        self.salary = str(salary)
-        self.cpp_to_date = str(cpp_to_date)
-        self.ei_to_date = str(ei_to_date)
-        self.ei_exempt = ei_exempt
-        
-        # Setup the Mechanize Browser.
-        self.b = Browser()
-        self.b.set_handle_robots(False)
-        self.b.open(ENDPOINT)
-        
-
-    def calculate(self):
-        # https://apps.cra-arc.gc.ca/ebci/rhpd/startLanguage.do?lang=English
-    
-        # 1. Enter Pay Period information.
-        print "PAY"
-        print self.b.geturl()
-        self.b.select_form(name="welcomeData")
-        # January 1, 2010 - "7"
-        # January 1, 2009 - "4"
-        self.b.form["year"] = ["7"]
-        # British Columbia - "9"
-        self.b.form["province"] = ["9"]
-        # Biweekly - "2"
-        # Monthly - "4"
-        self.b.form["payPeriod"] = [self.payperiod]
-        self.b.submit(name="fwdSalary")
-
-        # 2. Salary, Bonus Etc.
-        print "SALARY"
-        print self.b.geturl()
-        self.b.select_form(name="payrollData")
-        self.b.form["yearToDateCPPAmount"] = self.cpp_to_date
-        
-        if self.ei_exempt:
-            # EI exempt - "2"
-            self.b.form["yearToDateEI"] = ["2"]
-        else:
-            self.b.form["yearToDateEIAmount"] = self.ei_to_date
-        
-        self.b.submit(name="fwdGrossSalary")
-
-        # 3. Gross Income
-        print "GROSS"
-        print self.b.geturl()
-        self.b.select_form(name="grossIncomeData")
-        self.b.form["incomeTypeAmount"] = self.salary
-        self.b.submit()
-
-        # 4. Salary / Bonus Etc. again
-        print "SALARY"
-        print self.b.geturl()
-        self.b.select_form(name="payrollData")
-        # We need to press the "Calculate" button - it's number 3!
-        self.b.submit(nr=3)
-        
-        # 5. Results page. Scraping time!
-        self.doc = HTML.fromstring(self.b.response().read(), self.b.geturl())
-        return self._needle()    
-    
-    def _needle(self):
-        # The data we want is trapped somewhere around here.
-        fields = [
-            "Salary or wages for the pay period",
-            "Total EI insurable earnings for the pay period",
-            "Taxable income",
-            "Cash income for the pay period",
-            "Federal tax deductions",
-            "Provincial tax deductions",
-            "Requested additional tax deduction",
-            "Total tax on income",
-            "CPP deductions",
-            "EI deductions",
-            "Amounts deducted at source",
-            "Total deductions on income",
-            "Net amount"
-        ]
-        
-        # .width50 would also work ;)
-        values = [string2dollar(td.text) for td in self.doc.xpath("//table[3]//td[2]")]
-        values.append(string2dollar(self.doc.xpath("//table[4]//td[2]")[0].text))
-        
-        print string2dollar(self.doc.xpath("//table[4]//td[2]")[0].text)
-        
-        pprint.pprint(zip(fields, values))
-        
-        return values
-        #return zip(fields, values)
+ENDPOINT = 'https://apps.cra-arc.gc.ca/ebci/rhpd/startLanguage.do?lang=English'
 
 
 def string2dollar(s):
     return round(float(''.join(c for c in s if c in string.digits + '.')), 2)
+
+# payroll(4000, 0, 0, False, '2')
+def payroll(salary, cpp_to_date, ei_to_date, ei_exempt, payperiod):    
+    # We'll need the date later.
+    year, month, day = datetime.datetime.now().strftime('%Y %m %d').split(' ')
+    
+    # Setup Mechanize Browser.
+    b = Browser()
+    b.set_handle_robots(False)
+    b.open(ENDPOINT)
+    
+    print 'STEP 0 - SETUP'
+    print ENDPOINT
+    
+    b.select_form(nr=0)
+    b.form['calculationType'] = ['salary']
+    b.submit('goStep1')
+    
+    print 'STEP 1 - INFO'
+    print b.geturl()
+    
+    b.select_form(nr=0)
+    # British Columbia
+    b.form['province'] = ['9']
+    # Pay Period
+    # Bi-weekly - '2'
+    # Monthly - '4'
+    # b.form['payPeriod'] = ['4']
+    b.form['payPeriod'] = [payperiod]
+    # Date the employee is paid
+    # 2010
+    # 01
+    # 01
+    b.form['cmbFirstYear'] = [year]
+    b.form['cmbFirstMonth'] = [month]
+    b.form['cmbFirstDay'] = [day]
+    b.submit('goStep2AddOption')
+    
+    print 'STEP 2 - INCOME'
+    print b.geturl()
+    
+    b.select_form(nr=0)
+    # b.form['incomeTypeAmount'] = '4000'
+    b.form['incomeTypeAmount'] = str(salary)
+    b.submit('goStep2Option')
+    
+    print 'STEP 3 - SALARY'
+    print b.geturl()
+    
+    b.select_form(nr=0)
+    # CPP
+    b.form['yearToDateCPPAmount'] = str(cpp_to_date)
+    # EI
+    # EI exempt - '2'
+    if ei_exempt:
+        b.form['yearToDateEI'] = ['2']
+    else:
+        b.form['yearToDateEIAmount'] = str(ei_to_date)
+    b.submit('goResults')
+    
+    print 'STEP 4 - GOODS'
+    print b.geturl()
+    
+    doc = HTML.fromstring(b.response().read(), b.geturl())
+    fields = {
+        'salary': '//*[@class="table"]/ul[3]/li[1]',
+        'cash_income': '//*[@class="table"]/ul[4]/li[2]/strong',
+        'taxable_income': '//*[@class="table"]/ul[3]/li[4]',
+        # 'Pensionable earnings for the pay period': '//*[@class="table"]/ul[3]/li[5]',
+        'ei_insurable_earnings': '//*[@class="table"]/ul[3]/li[6]',
+        'federal_tax_deductions': '//*[@class="table"]/ul[2]/li[7]',
+        'provincial_tax_deductions': '//*[@class="table"]/ul[2]/li[8]',
+        'additional_tax_deductions': '//*[@class="table"]/ul[2]/li[9]',
+        'total_tax_on_income': '//*[@class="table"]/ul[3]/li[10]',
+        'cpp_deductions': '//*[@class="table"]/ul[3]/li[11]',
+        'ei_deductions': '//*[@class="table"]/ul[3]/li[12]',
+        'amounts_deducted_at_source': '//*[@class="table"]/ul[3]/li[13]',
+        'total_deductions_on_income': '//*[@class="table"]/ul[4]/li[14]/strong',
+        'net_amount': '//*[@class="table"]/ul[4]/li[15]/strong'
+    }
+    
+    values = {}
+    for name, xpath in fields.items():
+        values[name] = string2dollar(doc.xpath(xpath)[0].text)
+        
+    import pprint
+    pprint.pprint(values)
+        
+    return values

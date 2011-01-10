@@ -26,8 +26,14 @@ td { border: 1px solid black; padding: 5px; min-width: 125px; }
             <th>Date</th>
             <th>Salary</th>
             <th>Net</th>
+
+           <th>Personal CPP</th>
             <th>Corporate CPP</th>
-            <th>Corporate EI</th>        
+
+            
+            <th>Personal EI</th>
+            <th>Corporate EI</th>
+            
             <th>Tax</th>
         </tr>
     </thead>
@@ -38,8 +44,16 @@ td { border: 1px solid black; padding: 5px; min-width: 125px; }
                 <td>{{ p.created_at|date:"M d, Y" }}</td>
                 <td>{{ p.salary }}</td>
                 <td>{{ p.net_amount }}</td>
+
+
+                <td>{{ p.cpp_deductions }}</td>
                 <td>{{ p.total_cpp_deductions }}</td>
+
+
+
+                <td>{{ p.ei_deductions }}</td>
                 <td>{{ p.total_ei_deductions }}</td>
+
                 <td>{{ p.total_tax_deductions }}</td>
             </tr>
         {% endfor %}
@@ -53,8 +67,15 @@ td { border: 1px solid black; padding: 5px; min-width: 125px; }
             <td></td>
             <td>{{ filter|sum:"salary" }}</td>
             <td>{{ filter|sum:"net_amount" }}</td>
+
+
+            <td><strong>{{ filter|sum:"cpp_deductions" }}</strong></td>
             <td>{{ filter|sum:"total_cpp_deductions" }}</td>
+
+
+            <td><strong>{{ filter|sum:"ei_deductions" }}</strong></td>
             <td>{{ filter|sum:"total_ei_deductions" }}</td>
+
             <td>{{ filter|sum:"total_tax_deductions" }}</td>
         </tr>
         <tr>
